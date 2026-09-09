@@ -1,0 +1,43 @@
+name: Build Android APK (Latest)
+
+on:
+  workflow_dispatch: # Permite que você ative a compilação manualmente com um botão
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive # Baixa todas as dependências internas do Furnace
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android NDK
+        run: |
+          sdkmanager --install "ndk;25.2.9519653"
+
+      - name: Build with CMake and Gradle
+        run: |
+          cd cmake/android || cd android # Ajusta o caminho baseado na estrutura atual
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-android.outputs.sdk-path }}/ndk/25.2.9519653
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: furnace-android-apk
+          path: |
+            **/build/outputs/apk/debug/*.apk
+            
